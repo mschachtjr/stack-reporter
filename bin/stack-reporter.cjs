@@ -230,12 +230,106 @@ function parseLockFile(lockFile) {
 }
 
 // ============================================================================
+// Framework Config Detection
+// ============================================================================
+
+/**
+ * Detect the primary framework from package.json dependencies.
+ * Returns the framework name or null if no known framework is found.
+ */
+function detectFramework() {
+  try {
+    const pkgPath = path.join(process.cwd(), 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    const allDeps = {
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
+    };
+
+    if (allDeps['next']) return 'nextjs';
+    if (allDeps['gatsby']) return 'gatsby';
+    if (allDeps['@remix-run/react']) return 'remix';
+    if (allDeps['nuxt']) return 'nuxt';
+    if (allDeps['@angular/core']) return 'angular';
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read Next.js config and extract security-relevant flags.
+ * Uses regex to parse next.config.{ts,js,mjs} — no TypeScript compiler needed.
+ */
+function detectNextJsConfig() {
+  const cwd = process.cwd();
+  const candidates = ['next.config.ts', 'next.config.mjs', 'next.config.js'];
+  const config = {};
+
+  for (const filename of candidates) {
+    const filePath = path.join(cwd, filename);
+    if (!fs.existsSync(filePath)) continue;
+
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+
+      // Detect PPR: experimental.ppr = 'incremental' | true
+      // Matches patterns like:
+      //   ppr: 'incremental'
+      //   ppr: true
+      //   ppr: "incremental"
+      if (/\bppr\s*:\s*(?:['"]incremental['"]|true)\b/.test(content)) {
+        config.ppr = true;
+      } else {
+        config.ppr = false;
+      }
+
+      // Detect serverActions (enabled by default in Next.js 14+, but can be explicitly set)
+      if (/\bserverActions\s*:\s*true\b/.test(content)) {
+        config.serverActions = true;
+      }
+
+      break; // Found a config file, stop looking
+    } catch {
+      // Parse error — skip this file
+    }
+  }
+
+  return Object.keys(config).length > 0 ? config : null;
+}
+
+/**
+ * Collect runtime config for the detected framework.
+ * Returns a config object or null if no framework-specific config is found.
+ */
+function detectConfig() {
+  const framework = detectFramework();
+  if (!framework) return null;
+
+  const config = {};
+
+  if (framework === 'nextjs') {
+    const nextConfig = detectNextJsConfig();
+    if (nextConfig) {
+      config.nextjs = nextConfig;
+    }
+  }
+
+  // Other frameworks can be added here as needed
+
+  return Object.keys(config).length > 0 ? config : null;
+}
+
+// ============================================================================
 // API Report
 // ============================================================================
 
-function postReport(domain, dependencies) {
+function postReport(domain, dependencies, config) {
   return new Promise((resolve) => {
-    const body = JSON.stringify({ domain, dependencies });
+    const payload = { domain, dependencies };
+    if (config) payload.config = config;
+    const body = JSON.stringify(payload);
     const url = new URL(API_URL);
 
     const options = {
@@ -309,9 +403,15 @@ async function main() {
     return;
   }
 
+  // Detect framework config (for config-based vuln suppression)
+  const config = detectConfig();
+  if (config) {
+    console.log(`[beacon] Detected framework config: ${JSON.stringify(config)}`);
+  }
+
   // Report
   console.log(`[beacon] Reporting ${deps.length} direct dependencies for ${domain}...`);
-  const result = await postReport(domain, deps);
+  const result = await postReport(domain, deps, config);
 
   if (result.error) {
     console.log(`[beacon] Report failed: ${result.error}. Build continues.`);
