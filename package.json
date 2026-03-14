@@ -1,6 +1,6 @@
 {
   "name": "@312npm/stack-reporter",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Continuous CVE monitoring for your npm dependencies — scans nightly and emails you when vulnerabilities are disclosed, even between deploys",
   "license": "MIT",
   "author": "312 Elements <hello@312elements.com>",
