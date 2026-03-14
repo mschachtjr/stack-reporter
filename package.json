@@ -5,6 +5,10 @@
   "license": "MIT",
   "author": "312 Elements <hello@312elements.com>",
   "homepage": "https://seo.312elements.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mschachtjr/stack-reporter.git"
+  },
   "keywords": [
     "dependency",
     "reporter",
