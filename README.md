@@ -1,16 +1,20 @@
 # @312npm/stack-reporter
 
-Reports your project's dependency list to [312 Elements](https://seo.312elements.com) on every build. We scan your dependencies nightly against the [OSV.dev](https://osv.dev) vulnerability database and email you when a package in your stack has a known CVE.
+## The problem
+
+`npm audit` only runs when you do — during installs or CI builds. Between deploys, new vulnerabilities are disclosed against packages already in your `node_modules`. Unless someone on your team remembers to check, you won't know until the next build, which could be days or weeks later. By then, the vulnerability may have been public long enough for active exploitation.
+
+## What this does
+
+This package reports your dependency list to [312 Elements](https://seo.312elements.com) once per build. We then scan those dependencies against the [OSV.dev](https://osv.dev) vulnerability database **every night at 3 AM**. If a new CVE is disclosed against any package in your stack, you get an email with the affected package, severity, and fix — whether you deploy that day or not.
+
+Think of it as `npm audit` running on autopilot. Zero config, zero maintenance, zero risk to your build.
 
 ## How it works
 
-This is a two-part system:
+1. **This package (client-side):** Reads your lock file and sends package names + versions to the 312 Elements API. No source code, secrets, or environment variables are transmitted. Always exits 0 — it will never break your build.
 
-1. **This package (client-side):** Reads your lock file and sends package names + versions to the 312 Elements API on each build. No source code, secrets, or environment variables are sent. Always exits 0 — will never break your build.
-
-2. **312 Elements (server-side):** Runs a nightly scan of all reported dependencies against the OSV.dev CVE database. If a vulnerability is found, you receive an email with the affected package, severity, and how to fix it.
-
-This is a companion to `npm audit` — it provides ongoing, passive monitoring so you don't have to remember to check manually.
+2. **312 Elements (server-side):** Scans all reported dependencies nightly against the OSV.dev CVE database. If a vulnerability is found, you receive an email with the affected package, severity, and remediation steps.
 
 ## Install
 
