@@ -1,0 +1,28 @@
+{
+  "name": "@312npm/stack-reporter",
+  "version": "1.1.0",
+  "description": "Reports your project's dependency list to 312 Elements for nightly CVE scanning and email alerts",
+  "license": "MIT",
+  "author": "312 Elements <hello@312elements.com>",
+  "homepage": "https://seo.312elements.com",
+  "keywords": [
+    "dependency",
+    "reporter",
+    "security",
+    "cve",
+    "vulnerability",
+    "monitoring"
+  ],
+  "bin": {
+    "stack-reporter": "./bin/stack-reporter.cjs"
+  },
+  "scripts": {
+    "postinstall": "node ./bin/setup.cjs"
+  },
+  "files": [
+    "bin/"
+  ],
+  "engines": {
+    "node": ">=16"
+  }
+}
